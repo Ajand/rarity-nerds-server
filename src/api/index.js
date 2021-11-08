@@ -2,13 +2,16 @@ const { ApolloServer, gql } = require('apollo-server');
 const { PORT } = process.env;
 
 const collectionAPI = require('./collection');
+const traitAPI = require('./trait')
 const fetcherAPI = require('../fetcher');
+const rarityAPI = require('../analysis')
 
 // A schema is a collection of type definitions (hence "typeDefs")
 // that together define the "shape" of queries that are executed against
 // your data.
 
 // The `listen` method launches a web server.
+
 
 const apiRunner = async (redis) => {
 	const typeDefs = gql`
@@ -29,6 +32,21 @@ const apiRunner = async (redis) => {
 			createdAt: String
 		}
 
+		type FetchingStatus {
+			minId: Int
+			maxId: Int
+			offset: Int
+			generalTokenUri: String
+			fetchedTokens: Int
+		}
+
+		type Trait {
+			collectionId: ID!
+			trait_type: String!
+			value: String!
+			amount: Int!
+		}
+
 		# The "Query" type is special: it lists all of the available queries that
 		# clients can execute, along with the return type for each. In this
 		# case, the "books" query returns an array of zero or more Books (defined above).
@@ -36,6 +54,11 @@ const apiRunner = async (redis) => {
 			collection(_id: ID!): Collection
 			userCollections: [Collection!]!
 			adminCollections: [Collection!]!
+
+			fetchingStatus(_id: ID!): FetchingStatus
+
+			traits(collectionId: ID!): [Trait!]!
+
 		}
 
 		type Mutation {
@@ -57,6 +80,7 @@ const apiRunner = async (redis) => {
 			changePublicity(_id: ID!): String
 			fetchTokens(collectionId: ID!, minId: Int!, maxId: Int!, offset: Int!, generalTokenUri: String!): String!
 			stopFetching(_id: ID!): String
+			calculateRarity(_id: ID!): String
 		}
 	`;
 
@@ -64,7 +88,11 @@ const apiRunner = async (redis) => {
 		Query: {
 			collection: (_, { _id }) => collectionAPI.get(_id),
 			userCollections: () => collectionAPI.userCollections(),
-			adminCollections: () => collectionAPI.adminCollections()
+			adminCollections: () => collectionAPI.adminCollections(),
+
+			fetchingStatus: (_, {_id}) => fetcherAPI.getStatus(redis)(_id),
+
+			traits: (_, {collectionId}) => traitAPI.getTraits(collectionId)
 		},
 
 		Mutation: {
@@ -73,7 +101,8 @@ const apiRunner = async (redis) => {
 			changePublicity: (_, { _id }) => collectionAPI.changePublicity(_id),
 
 			fetchTokens: (_, fetchParams) => fetcherAPI.fetch(redis)(fetchParams),
-			stopFetching: (_, { _id }) => fetcherAPI.stopFetcher(redis)(_id)
+			stopFetching: (_, { _id }) => fetcherAPI.stopFetcher(redis)(_id),
+			calculateRarity: (_, {_id}) => rarityAPI.calculateRarity(redis)(_id)
 		}
 	};
 

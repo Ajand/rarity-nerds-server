@@ -17,21 +17,34 @@ const findNeededTokens = require('./utils/findNeededTokens');
 const fetch = (redis) => async ({ collectionId, minId, maxId, offset, generalTokenUri }) => {
 	const cacheKey = `fetching:${collectionId}`;
 	const fetchingStatus = await redis.HGETALL(cacheKey);
+	await redis.sendCommand([
+		'HMSET',
+		`fetching:${collectionId}`,
+		'minId',
+		String(minId),
+		'maxId',
+		String(maxId),
+		'offset',
+		String(offset),
+		'generalTokenUri',
+		generalTokenUri
+	]);
 	if (Object.keys({ ...fetchingStatus }).length === 0) {
 		const currentTokens = await findTokens(collectionId);
 		const neededTokens = findNeededTokens(maxId, minId, currentTokens.map((token) => token.tokenId));
 
-		await redis.HSET(
-			`fetching:${collectionId}`,
-			'minId',
-			String(minId),
-			'maxId',
-			String(maxId),
-			'offset',
-			String(offset),
-			'generalTokenUri',
-			generalTokenUri
-		);
+		await redis.sendCommand([
+		'HMSET',
+		`fetching:${collectionId}`,
+		'minId',
+		String(minId),
+		'maxId',
+		String(maxId),
+		'offset',
+		String(offset),
+		'generalTokenUri',
+		generalTokenUri]
+	)
 
 		const fetchQueue = new Queue(`fetchTokens${collectionId}`, {
 			defaultJobOptions: {
@@ -55,8 +68,6 @@ const fetch = (redis) => async ({ collectionId, minId, maxId, offset, generalTok
 
 		fetchQueue.process(10, async function(job, done) {
 			const { collectionId, url, replace, id, offset, final } = job.data;
-
-			console.log(` Fetching ${id}`);
 
 			traitFetcher({ traitDBQueue, tokenDBQueue })({ collectionId, url, replace, id, offset })
 				.then(async () => {
@@ -105,10 +116,21 @@ const stopFetcher = (redis) => async (collectionId) => {
 	return 'Fetching Stopped';
 };
 
-const fetchingStatus = (collectionId) => {};
+const getStatus = (redis) => async (collectionId) => {
+	const cacheKey = `fetching:${collectionId}`;
+
+	const fetchingStatus = await redis.HGETALL(cacheKey);
+	const currentTokens = await findTokens(collectionId);
+
+
+	return {
+		...fetchingStatus,
+		fetchedTokens: currentTokens.length
+	};
+};
 
 module.exports = {
 	fetch,
 	stopFetcher,
-	fetchingStatus
+	getStatus
 };
