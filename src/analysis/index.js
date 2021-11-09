@@ -8,8 +8,8 @@ const calculateRarity = (redis) => (collectionId) => {
 	rarityCalculator(rarityDBQueue)(collectionId).then(() => console.log("doing calculation")).catch(err => console.log("some error happened"))
 
 	rarityDBQueue.process(10, function(job, done) {
-		const { contract, tokenId, normalizeScore, scoreRank } = job.data;
-		Token.findOne({ tokenId, contract }, (err, token) => {
+		const { collectionId, tokenId, normalizeScore, scoreRank } = job.data;
+		Token.findOne({ tokenId, collectionId }, (err, token) => {
 			if (err) {
 				return done(err);
 			}

@@ -62,6 +62,8 @@ const rarityCalculator = rarityDBQueue => (collectionId) => {
             .forEach((token, index) => {
               // add {...token, rarityRank, scoreRank: index+1}
               //  console.log(token);
+
+
               rarityDBQueue.add({
                 collectionId: collectionId,
                 tokenId: token.tokenId,

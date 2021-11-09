@@ -8,9 +8,9 @@ const getTokens = async (collectionId, { offset = 0, filters = [], filterIds = [
 		const createSortBy = () => {
 			switch (sortBy) {
 				case 'normalized':
-					return { normalizeScore: -1 };
+					return { scoreRank: 1 };
 				case 'normalized-r':
-					return { normalizeScore: 1 };
+					return { scoreRank: -1 };
 				case 'id':
 					return { tokenId: -1 };
 				case 'id-r':
@@ -26,7 +26,6 @@ const getTokens = async (collectionId, { offset = 0, filters = [], filterIds = [
 
 		const createQueryParams = () => {
 			let query = { collectionId };
-            console.log(filterIds)
 			if (filterIds.length) query = { ...query, tokenId: { $in: filterIds } };
 			filters.map(fil => JSON.parse(fil)).forEach((fil) => {
 				switch (fil.variant) {

@@ -1,4 +1,5 @@
 const Collection = require('../db/Collection');
+const findTokens = require('../fetcher/findTokens');
 
 // create
 // edit
@@ -60,7 +61,11 @@ const get = (_id) => {
 		Collection.findOne({ _id }, (err, collection) => {
 			if (err) return reject(err);
 			if (!collection) return reject(new Error('There is no collection with this ID'));
-			return resolve(collection);
+			findTokens(collection._id)
+				.then((currentTokens) => {
+					return resolve({ ...collection._doc, total: currentTokens.length });
+				})
+				.catch((err) => reject(err));
 		});
 	});
 };

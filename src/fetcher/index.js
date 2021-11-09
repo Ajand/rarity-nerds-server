@@ -66,7 +66,7 @@ const fetch = (redis) => async ({ collectionId, minId, maxId, offset, generalTok
 			})
 		);
 
-		fetchQueue.process(10, async function(job, done) {
+		fetchQueue.process(10, async function(job, done) { 
 			const { collectionId, url, replace, id, offset, final } = job.data;
 
 			traitFetcher({ traitDBQueue, tokenDBQueue })({ collectionId, url, replace, id, offset })
@@ -74,6 +74,7 @@ const fetch = (redis) => async ({ collectionId, minId, maxId, offset, generalTok
 					done(null, job.data);
 				})
 				.catch((err) => {
+					console.log(err)
 					setTimeout(() => {
 						fetchQueue.add({ collectionId, url, replace, id, offset });
 					}, 5000);

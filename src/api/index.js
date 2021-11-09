@@ -31,6 +31,7 @@ const apiRunner = async (redis) => {
 			published: Boolean!
 			markets: [String]
 			createdAt: String
+			total: Int
 		}
 
 		type FetchingStatus {
@@ -98,7 +99,6 @@ const apiRunner = async (redis) => {
 
 			traits: (_, { collectionId }) => traitAPI.getTraits(collectionId),
 			tokens: (_, { collectionId, filters, sortBy, offset, filterIds }) => {
-				console.log(filterIds);
 				return tokenAPI.getTokens(collectionId, { filters, sortBy, offset, filterIds });
 			}
 		},
